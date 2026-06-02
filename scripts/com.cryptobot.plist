@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  macOS launchd template — keep the bot running 24/7 and restart it if it exits.
+
+  Install:
+    1. Edit the two REPLACE_ME paths below to your absolute project path.
+    2. cp scripts/com.cryptobot.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/com.cryptobot.plist
+    4. launchctl start com.cryptobot
+  Stop / remove:
+    launchctl unload ~/Library/LaunchAgents/com.cryptobot.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.cryptobot</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>REPLACE_ME/crypto_trading/scripts/run-bot.sh</string>
+  </array>
+  <key>WorkingDirectory</key><string>REPLACE_ME/crypto_trading</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>REPLACE_ME/crypto_trading/bot.out.log</string>
+  <key>StandardErrorPath</key><string>REPLACE_ME/crypto_trading/bot.err.log</string>
+</dict>
+</plist>

@@ -1,0 +1,31 @@
+{
+  "symbol": "BTCUSDT",
+  "mode": "LIVE",
+  "last_price": 69511.99,
+  "holding": false,
+  "entry": 0.0,
+  "base_qty": 0.0,
+  "unreal_pct": 0.0,
+  "unreal_usd": 0.0,
+  "realized_usd": 0.0,
+  "wins": 0,
+  "losses": 0,
+  "trades_today": 0,
+  "recent": [
+    {
+      "ts": "09:44:49",
+      "action": "BUY",
+      "confidence": 46,
+      "price": 69511.99,
+      "blocked": "low_confidence",
+      "reason": "RSI 26.99 is oversold (<= 35), trend down (mean-reversion)."
+    }
+  ],
+  "series": [
+    {
+      "ts": "09:44",
+      "price": 69511.99
+    }
+  ],
+  "cycles": 1
+}

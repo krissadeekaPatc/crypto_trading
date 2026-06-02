@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>crypto_trading — Binance Bot</title>
+<style>
+  :root {
+    --bg: #0e1117;
+    --panel: #161b22;
+    --panel-2: #1c2230;
+    --border: #2a3343;
+    --text: #e6edf3;
+    --muted: #9aa7b8;
+    --accent: #f0b90b;      /* binance gold */
+    --accent-2: #58a6ff;
+    --green: #3fb950;
+    --red: #f85149;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", "Sarabun", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.65;
+  }
+  a { color: var(--accent-2); }
+  code, .mono { font-family: var(--mono); font-size: 0.9em; }
+  code {
+    background: var(--panel-2);
+    padding: 0.12em 0.4em;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: #0a0d12;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    line-height: 1.5;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  header.hero {
+    border-bottom: 1px solid var(--border);
+    background: radial-gradient(1200px 400px at 20% -10%, rgba(240,185,11,0.10), transparent),
+                var(--panel);
+    padding: 48px 24px 36px;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 24px; }
+  .badge {
+    display: inline-block; font-family: var(--mono); font-size: 0.72rem;
+    color: var(--accent); border: 1px solid rgba(240,185,11,0.4);
+    background: rgba(240,185,11,0.08); padding: 3px 10px; border-radius: 999px;
+    letter-spacing: 0.04em;
+  }
+  h1 { font-size: 2.3rem; margin: 14px 0 6px; letter-spacing: -0.02em; }
+  h1 .mono { color: var(--accent); }
+  .tagline { color: var(--muted); font-size: 1.08rem; margin: 0; }
+
+  .langbar { display: flex; gap: 8px; margin-bottom: 8px; }
+  .langbar button {
+    font-family: var(--mono); font-size: 0.8rem; cursor: pointer;
+    background: var(--panel-2); color: var(--muted);
+    border: 1px solid var(--border); border-radius: 8px; padding: 6px 14px;
+    transition: all .15s;
+  }
+  .langbar button:hover { color: var(--text); }
+  .langbar button.active {
+    color: #0e1117; background: var(--accent); border-color: var(--accent);
+    font-weight: 700;
+  }
+
+  section { padding: 34px 0; border-bottom: 1px solid var(--border); }
+  h2 { font-size: 1.5rem; margin: 0 0 4px; display: flex; align-items: center; gap: 10px; }
+  h2 .num {
+    font-family: var(--mono); font-size: 0.85rem; color: var(--accent);
+    border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px;
+  }
+  h3 { font-size: 1.1rem; margin: 22px 0 6px; color: var(--accent-2); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 12px; padding: 18px 20px; margin: 14px 0;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 680px) { .grid { grid-template-columns: 1fr; } }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.92rem; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.82rem; text-transform: uppercase; letter-spacing: .03em; }
+  td code { white-space: nowrap; }
+
+  .warn {
+    background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.4);
+    border-radius: 12px; padding: 16px 20px; margin: 16px 0;
+  }
+  .warn strong { color: var(--red); }
+  .ok { color: var(--green); }
+
+  .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 10px 0; }
+  .flow .step {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 12px; font-size: 0.86rem; font-family: var(--mono);
+  }
+  .flow .arrow { color: var(--accent); font-weight: 700; }
+
+  ul { padding-left: 20px; } li { margin: 4px 0; }
+  footer { padding: 30px 0 60px; color: var(--muted); font-size: 0.85rem; }
+
+  /* language switching */
+  body[data-lang="en"] .th { display: none; }
+  body[data-lang="th"] .en { display: none; }
+  body[data-lang="th"] { font-family: "Sarabun", -apple-system, "Segoe UI", sans-serif; }
+</style>
+</head>
+<body data-lang="en">
+
+<header class="hero">
+  <div class="wrap">
+    <div class="langbar">
+      <button data-set="en" class="active" onclick="setLang('en')">EN · English</button>
+      <button data-set="th" onclick="setLang('th')">TH · ไทย</button>
+    </div>
+    <span class="badge">BINANCE SPOT · PYTHON · TESTNET-FIRST</span>
+    <h1><span class="mono">crypto_trading</span> 🤖</h1>
+    <p class="tagline en">An automated Binance spot trading bot — runs 24/7, decides with rules or AI, and trades safely on Testnet first.</p>
+    <p class="tagline th">บอทเทรดคริปโตอัตโนมัติบน Binance (Spot) — ทำงาน 24 ชม. ตัดสินใจด้วยกฎหรือ AI และเทรดอย่างปลอดภัยบน Testnet ก่อน</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- 1. WHAT -->
+<section>
+  <h2><span class="num">1</span> <span class="en">What is this?</span><span class="th">นี่คืออะไร?</span></h2>
+  <div class="en">
+    <p><strong>crypto_trading</strong> is a Python bot that automatically trades cryptocurrency on <strong>Binance</strong>. Every cycle it looks at the market, decides <span class="mono">BUY / SELL / HOLD</span>, and (optionally) places the order — then logs everything.</p>
+    <p>It has <strong>two interchangeable "brains" (engines)</strong>:</p>
+    <div class="grid">
+      <div class="card">
+        <h3 style="margin-top:0">⚙️ Rules engine <span class="ok">(default)</span></h3>
+        <p>Classic indicators: <strong>RSI + moving-average trend</strong>. No API key, no cost, fully deterministic and easy to test. Buys oversold, sells overbought.</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">🧠 Claude engine</h3>
+        <p>Claude (Opus 4.8) reads the market each cycle and returns a decision with reasoning. More flexible, but needs an Anthropic API key and costs a little per cycle.</p>
+      </div>
+    </div>
+    <p>Whichever brain decides, the <strong>bot itself enforces the risk limits</strong> (stop-loss, take-profit, position size, daily cap) — risk is never left to the model.</p>
+  </div>
+  <div class="th">
+    <p><strong>crypto_trading</strong> คือบอทภาษา Python ที่เทรดคริปโตบน <strong>Binance</strong> โดยอัตโนมัติ ทุกๆ รอบมันจะดูตลาด ตัดสินใจ <span class="mono">ซื้อ / ขาย / ถือ (BUY / SELL / HOLD)</span> และ (ถ้าเปิดใช้) ส่งคำสั่งซื้อขาย แล้วบันทึกทุกอย่างไว้</p>
+    <p>มี <strong>“สมอง” (engine) ให้เลือก 2 แบบ</strong>:</p>
+    <div class="grid">
+      <div class="card">
+        <h3 style="margin-top:0">⚙️ Rules engine <span class="ok">(ค่าเริ่มต้น)</span></h3>
+        <p>ใช้อินดิเคเตอร์คลาสสิก: <strong>RSI + แนวโน้มเส้นค่าเฉลี่ย (MA)</strong> ไม่ต้องใช้ API key ไม่มีค่าใช้จ่าย ผลลัพธ์แน่นอนและทดสอบง่าย ซื้อตอน oversold ขายตอน overbought</p>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">🧠 Claude engine</h3>
+        <p>ให้ Claude (Opus 4.8) อ่านตลาดทุกรอบและตอบการตัดสินใจพร้อมเหตุผล ยืดหยุ่นกว่า แต่ต้องใช้ Anthropic API key และมีค่าใช้จ่ายเล็กน้อยต่อรอบ</p>
+      </div>
+    </div>
+    <p>ไม่ว่าจะใช้สมองแบบไหน <strong>ตัวบอทเองเป็นคนบังคับใช้ขีดจำกัดความเสี่ยง</strong> (stop-loss, take-profit, ขนาดไม้, จำกัดจำนวนเทรดต่อวัน) — ไม่ปล่อยให้โมเดลจัดการความเสี่ยงเอง</p>
+  </div>
+</section>
+
+<!-- 2. HOW IT WORKS -->
+<section>
+  <h2><span class="num">2</span> <span class="en">How it works (one cycle)</span><span class="th">หลักการทำงาน (1 รอบ)</span></h2>
+  <div class="flow">
+    <span class="step">📊 Data + Indicators</span><span class="arrow">→</span>
+    <span class="step">🛑 Risk exits (SL/TP)</span><span class="arrow">→</span>
+    <span class="step">🤔 Decide</span><span class="arrow">→</span>
+    <span class="step">🚧 Guardrails</span><span class="arrow">→</span>
+    <span class="step">💱 Execute</span><span class="arrow">→</span>
+    <span class="step">📓 Journal</span>
+  </div>
+  <div class="en">
+    <ol>
+      <li><strong>Data + Indicators</strong> — fetch candles, compute RSI / SMA20 / SMA50 / trend.</li>
+      <li><strong>Risk exits first</strong> — if holding and price hit stop-loss or take-profit, sell immediately (before asking the brain).</li>
+      <li><strong>Decide</strong> — the engine returns <span class="mono">BUY / SELL / HOLD</span> + a confidence 0–100 + a reason.</li>
+      <li><strong>Guardrails</strong> — block the trade if: already holding, daily cap hit, or confidence below threshold.</li>
+      <li><strong>Execute</strong> — place a market order on Binance (skipped while <code>dry_run</code> is on).</li>
+      <li><strong>Journal</strong> — append the full decision to <code>trade_journal.jsonl</code>; update <code>bot_state.json</code>.</li>
+    </ol>
+    <p>Then it sleeps <code>cycle_seconds</code> (default 15 min) and repeats.</p>
+  </div>
+  <div class="th">
+    <ol>
+      <li><strong>ดึงข้อมูล + คำนวณอินดิเคเตอร์</strong> — ดึงแท่งเทียน คำนวณ RSI / SMA20 / SMA50 / แนวโน้ม</li>
+      <li><strong>เช็คจุดออกก่อน</strong> — ถ้าถือเหรียญอยู่และราคาแตะ stop-loss หรือ take-profit ให้ขายทันที (ก่อนถามสมอง)</li>
+      <li><strong>ตัดสินใจ</strong> — engine ตอบ <span class="mono">BUY / SELL / HOLD</span> + ความมั่นใจ 0–100 + เหตุผล</li>
+      <li><strong>ด่านความปลอดภัย (Guardrails)</strong> — บล็อกการเทรดถ้า: ถือเหรียญอยู่แล้ว, ครบโควต้าเทรดต่อวัน, หรือความมั่นใจต่ำกว่าเกณฑ์</li>
+      <li><strong>ส่งคำสั่ง</strong> — ส่งคำสั่ง market บน Binance (ข้ามถ้าเปิด <code>dry_run</code> อยู่)</li>
+      <li><strong>บันทึก</strong> — เพิ่มการตัดสินใจลง <code>trade_journal.jsonl</code> และอัปเดต <code>bot_state.json</code></li>
+    </ol>
+    <p>จากนั้นพักตามค่า <code>cycle_seconds</code> (ค่าเริ่มต้น 15 นาที) แล้ววนซ้ำ</p>
+  </div>
+</section>
+
+<!-- 3. FILES -->
+<section>
+  <h2><span class="num">3</span> <span class="en">Project files</span><span class="th">ไฟล์ในโปรเจกต์</span></h2>
+  <table>
+    <thead><tr>
+      <th><span class="en">File</span><span class="th">ไฟล์</span></th>
+      <th><span class="en">What it does</span><span class="th">หน้าที่</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>trading_bot.py</code></td><td><span class="en">The main 24/7 loop, config, risk guardrails, journaling.</span><span class="th">ลูปหลัก 24 ชม. การตั้งค่า ด่านความเสี่ยง และการบันทึก</span></td></tr>
+      <tr><td><code>rule_strategy.py</code></td><td><span class="en">Rule-based brain (RSI + trend). No API key.</span><span class="th">สมองแบบกฎ (RSI + แนวโน้ม) ไม่ต้องใช้ API key</span></td></tr>
+      <tr><td><code>claude_strategy.py</code></td><td><span class="en">AI brain — Claude makes the call.</span><span class="th">สมอง AI — ให้ Claude ตัดสินใจ</span></td></tr>
+      <tr><td><code>indicators.py</code></td><td><span class="en">Computes RSI / SMA / trend from candles.</span><span class="th">คำนวณ RSI / SMA / แนวโน้ม จากแท่งเทียน</span></td></tr>
+      <tr><td><code>binance_client.py</code></td><td><span class="en">Talks to Binance (data + signed orders).</span><span class="th">เชื่อมต่อ Binance (ข้อมูล + คำสั่งที่เซ็นแล้ว)</span></td></tr>
+      <tr><td><code>check_connection.py</code></td><td><span class="en">Tests your keys — places no orders.</span><span class="th">ทดสอบ key ของคุณ — ไม่ส่งคำสั่งซื้อขาย</span></td></tr>
+      <tr><td><code>.env</code></td><td><span class="en">Your secret keys. Never commit this.</span><span class="th">key ลับของคุณ ห้าม commit เด็ดขาด</span></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- 4. SETUP -->
+<section>
+  <h2><span class="num">4</span> <span class="en">Setup &amp; run</span><span class="th">ติดตั้งและรัน</span></h2>
+  <div class="en">
+    <p><strong>1.</strong> Get free <a href="https://testnet.binance.vision">Testnet keys</a> (log in with GitHub → Generate HMAC_SHA256 Key).</p>
+    <p><strong>2.</strong> Set up the environment and keys:</p>
+  </div>
+  <div class="th">
+    <p><strong>1.</strong> ขอ <a href="https://testnet.binance.vision">Testnet key ฟรี</a> (ล็อกอินด้วย GitHub → Generate HMAC_SHA256 Key)</p>
+    <p><strong>2.</strong> เตรียม environment และใส่ key:</p>
+  </div>
+<pre><code>cd crypto_trading
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+
+cp .env.example .env     # <span class="en"># then paste your TESTNET keys into .env</span><span class="th"># แล้ววาง Testnet key ลงใน .env</span>
+# BINANCE_TESTNET=true</code></pre>
+  <div class="en"><p><strong>3.</strong> Verify keys, then run the bot:</p></div>
+  <div class="th"><p><strong>3.</strong> ตรวจสอบ key แล้วรันบอท:</p></div>
+<pre><code>python check_connection.py   <span class="en"># should show canTrade=True</span><span class="th"># ควรขึ้น canTrade=True</span>
+python trading_bot.py        <span class="en"># Ctrl-C to stop</span><span class="th"># กด Ctrl-C เพื่อหยุด</span></code></pre>
+  <p class="en">It starts <strong>double-safe</strong>: Testnet (fake funds) <em>and</em> <code>dry_run</code> (logs decisions, places no orders). Watch <code>trade_journal.jsonl</code>.</p>
+  <p class="th">บอทเริ่มแบบ <strong>ปลอดภัยสองชั้น</strong>: Testnet (เงินปลอม) <em>และ</em> <code>dry_run</code> (บันทึกการตัดสินใจ แต่ไม่ส่งคำสั่งจริง) ดูผลได้ที่ <code>trade_journal.jsonl</code></p>
+</section>
+
+<!-- 5. CONFIG -->
+<section>
+  <h2><span class="num">5</span> <span class="en">Settings you can tune</span><span class="th">ค่าที่ปรับได้</span></h2>
+  <p class="en">All in the <code>Config</code> block at the top of <code>trading_bot.py</code>:</p>
+  <p class="th">ทั้งหมดอยู่ในบล็อก <code>Config</code> ด้านบนของ <code>trading_bot.py</code>:</p>
+  <table>
+    <thead><tr>
+      <th><span class="en">Setting</span><span class="th">ค่า</span></th>
+      <th><span class="en">Default</span><span class="th">ค่าเริ่มต้น</span></th>
+      <th><span class="en">Meaning</span><span class="th">ความหมาย</span></th>
+    </tr></thead>
+    <tbody>
+      <tr><td><code>engine</code></td><td><code>"rules"</code></td><td><span class="en">Brain: <code>rules</code> or <code>claude</code></span><span class="th">สมอง: <code>rules</code> หรือ <code>claude</code></span></td></tr>
+      <tr><td><code>symbol</code></td><td><code>"BTCUSDT"</code></td><td><span class="en">Pair to trade</span><span class="th">คู่เหรียญที่เทรด</span></td></tr>
+      <tr><td><code>interval</code></td><td><code>"15m"</code></td><td><span class="en">Candle size</span><span class="th">ขนาดแท่งเทียน</span></td></tr>
+      <tr><td><code>cycle_seconds</code></td><td><code>900</code></td><td><span class="en">Seconds between cycles</span><span class="th">วินาทีต่อรอบ</span></td></tr>
+      <tr><td><code>trade_quote_amount</code></td><td><code>50</code></td><td><span class="en">USDT spent per BUY</span><span class="th">USDT ที่ใช้ต่อการซื้อ</span></td></tr>
+      <tr><td><code>min_confidence</code></td><td><code>65</code></td><td><span class="en">Ignore trades below this</span><span class="th">ข้ามการเทรดที่ต่ำกว่านี้</span></td></tr>
+      <tr><td><code>max_trades_per_day</code></td><td><code>6</code></td><td><span class="en">Circuit breaker</span><span class="th">ตัวตัดวงจร (จำกัดเทรด/วัน)</span></td></tr>
+      <tr><td><code>stop_loss_pct</code></td><td><code>3.0</code></td><td><span class="en">Auto-sell if down this %</span><span class="th">ขายอัตโนมัติถ้าขาดทุน %</span></td></tr>
+      <tr><td><code>take_profit_pct</code></td><td><code>5.0</code></td><td><span class="en">Auto-sell if up this %</span><span class="th">ขายอัตโนมัติถ้ากำไร %</span></td></tr>
+      <tr><td><code>dry_run</code></td><td><code>True</code></td><td><span class="en"><code>True</code> = no real orders</span><span class="th"><code>True</code> = ไม่ส่งคำสั่งจริง</span></td></tr>
+    </tbody>
+  </table>
+  <p class="en">💡 In a downtrend the bot mostly blocks buys (confidence &lt; 65). To see it trade on testnet: set <code>min_confidence = 45</code> and <code>dry_run = False</code>.</p>
+  <p class="th">💡 ในตลาดขาลงบอทมักบล็อกการซื้อ (ความมั่นใจ &lt; 65) ถ้าอยากเห็นมันเทรดบน testnet: ตั้ง <code>min_confidence = 45</code> และ <code>dry_run = False</code></p>
+</section>
+
+<!-- 6. MUST KNOW / SAFETY -->
+<section>
+  <h2><span class="num">6</span> <span class="en">⚠️ Everything you MUST know</span><span class="th">⚠️ สิ่งที่ต้องรู้</span></h2>
+  <div class="warn en">
+    <p><strong>This can lose real money.</strong> Most automated trading bots are unprofitable. The risk limits here reduce damage — they do <strong>not</strong> guarantee profit.</p>
+    <ul>
+      <li><strong>Always start on Testnet</strong> with <code>dry_run = True</code>. Only go live after you trust the behaviour.</li>
+      <li><strong>Go live carefully:</strong> set <code>BINANCE_TESTNET=false</code>, use live keys, start with a tiny <code>trade_quote_amount</code>.</li>
+      <li><strong>Protect your keys:</strong> never commit <code>.env</code>, never share secrets, restrict the API key to your IP, and <strong>never enable withdrawals</strong>.</li>
+      <li><strong>Not financial advice.</strong> You are responsible for every trade the bot makes.</li>
+      <li>Common errors: <code>-2015</code> = wrong key / not testnet / IP not allowed; <code>-1021</code> = computer clock out of sync.</li>
+    </ul>
+  </div>
+  <div class="warn th">
+    <p><strong>บอทนี้ทำให้เสียเงินจริงได้</strong> บอทเทรดอัตโนมัติส่วนใหญ่ขาดทุน ขีดจำกัดความเสี่ยงช่วยลดความเสียหาย แต่ <strong>ไม่</strong> รับประกันกำไร</p>
+    <ul>
+      <li><strong>เริ่มที่ Testnet เสมอ</strong> โดยตั้ง <code>dry_run = True</code> ค่อยไปใช้เงินจริงเมื่อมั่นใจในพฤติกรรมของมัน</li>
+      <li><strong>เปลี่ยนไปเงินจริงอย่างระวัง:</strong> ตั้ง <code>BINANCE_TESTNET=false</code> ใช้ key จริง และเริ่มด้วย <code>trade_quote_amount</code> น้อยๆ</li>
+      <li><strong>ปกป้อง key:</strong> ห้าม commit <code>.env</code>, ห้ามแชร์ secret, จำกัด API key ให้เฉพาะ IP ของคุณ และ <strong>ห้ามเปิดสิทธิ์ถอนเงิน (withdrawals)</strong> เด็ดขาด</li>
+      <li><strong>ไม่ใช่คำแนะนำการลงทุน</strong> คุณรับผิดชอบทุกการเทรดที่บอททำเอง</li>
+      <li>ข้อผิดพลาดที่พบบ่อย: <code>-2015</code> = key ผิด / ไม่ใช่ testnet / IP ไม่ได้รับอนุญาต; <code>-1021</code> = นาฬิกาเครื่องไม่ตรง</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. CONTRIBUTE -->
+<section>
+  <h2><span class="num">7</span> <span class="en">How to contribute</span><span class="th">วิธีร่วมพัฒนา</span></h2>
+  <div class="en">
+    <p>Contributions welcome! The workflow:</p>
+    <ol>
+      <li><strong>Fork</strong> the repo and create a branch: <code>git checkout -b feature/my-idea</code></li>
+      <li><strong>Make your change.</strong> Match the existing style — small, readable functions, clear comments, no new dependencies unless needed.</li>
+      <li><strong>Test on Testnet</strong> with <code>dry_run = True</code> before submitting. Never include real keys in a commit.</li>
+      <li><strong>Commit</strong> with a clear message, then open a <strong>Pull Request</strong> describing what and why.</li>
+    </ol>
+    <h3>Good first contributions 🎯</h3>
+    <ul>
+      <li><strong>Backtester</strong> — replay a strategy over historical candles, report win-rate &amp; P&amp;L.</li>
+      <li><strong>More indicators</strong> — MACD, Bollinger Bands, EMA crossovers in <code>indicators.py</code>.</li>
+      <li><strong>Status dashboard</strong> — read <code>trade_journal.jsonl</code> and show position / P&amp;L.</li>
+      <li><strong>More pairs</strong> — let the bot trade several symbols at once.</li>
+      <li><strong>Notifications</strong> — Telegram / Discord alert on each trade.</li>
+      <li><strong>Docs &amp; translations</strong> — improve this page or add another language.</li>
+    </ul>
+    <h3>Ground rules</h3>
+    <ul>
+      <li>Keep risk guardrails intact — never let a strategy bypass stop-loss / daily caps.</li>
+      <li>Default new features to the <strong>safe</strong> side (testnet, dry-run, small size).</li>
+      <li>One focused change per PR.</li>
+    </ul>
+  </div>
+  <div class="th">
+    <p>ยินดีรับการร่วมพัฒนา! ขั้นตอน:</p>
+    <ol>
+      <li><strong>Fork</strong> repo แล้วสร้าง branch: <code>git checkout -b feature/my-idea</code></li>
+      <li><strong>แก้ไขโค้ด</strong> ให้เข้ากับสไตล์เดิม — ฟังก์ชันสั้น อ่านง่าย คอมเมนต์ชัดเจน ไม่เพิ่ม dependency ถ้าไม่จำเป็น</li>
+      <li><strong>ทดสอบบน Testnet</strong> ด้วย <code>dry_run = True</code> ก่อนส่ง และห้ามใส่ key จริงใน commit</li>
+      <li><strong>Commit</strong> ด้วยข้อความที่ชัดเจน แล้วเปิด <strong>Pull Request</strong> อธิบายว่าแก้อะไรและทำไม</li>
+    </ol>
+    <h3>งานเริ่มต้นที่ดี 🎯</h3>
+    <ul>
+      <li><strong>Backtester</strong> — ทดสอบกลยุทธ์กับข้อมูลย้อนหลัง รายงาน win-rate และกำไร/ขาดทุน</li>
+      <li><strong>อินดิเคเตอร์เพิ่ม</strong> — MACD, Bollinger Bands, EMA crossover ใน <code>indicators.py</code></li>
+      <li><strong>หน้า Dashboard</strong> — อ่าน <code>trade_journal.jsonl</code> แล้วแสดงสถานะ / กำไรขาดทุน</li>
+      <li><strong>รองรับหลายคู่เหรียญ</strong> — ให้บอทเทรดหลายเหรียญพร้อมกัน</li>
+      <li><strong>การแจ้งเตือน</strong> — แจ้งเตือน Telegram / Discord ทุกครั้งที่เทรด</li>
+      <li><strong>เอกสารและการแปล</strong> — ปรับปรุงหน้านี้หรือเพิ่มภาษาอื่น</li>
+    </ul>
+    <h3>กติกาพื้นฐาน</h3>
+    <ul>
+      <li>อย่าแตะระบบความปลอดภัย — ห้ามให้กลยุทธ์ข้าม stop-loss / โควต้าต่อวัน</li>
+      <li>ฟีเจอร์ใหม่ให้ตั้งค่าเริ่มต้นแบบ <strong>ปลอดภัย</strong> (testnet, dry-run, ไม้เล็ก)</li>
+      <li>หนึ่ง PR ต่อหนึ่งการเปลี่ยนแปลงที่ชัดเจน</li>
+    </ul>
+  </div>
+</section>
+
+<footer class="wrap">
+  <p class="en">Built with Python · Binance Spot API · Claude. Trade responsibly — start on Testnet. 🛡️</p>
+  <p class="th">สร้างด้วย Python · Binance Spot API · Claude เทรดอย่างมีความรับผิดชอบ — เริ่มที่ Testnet 🛡️</p>
+</footer>
+
+</main>
+
+<script>
+  function setLang(lang) {
+    document.body.setAttribute('data-lang', lang);
+    document.documentElement.setAttribute('lang', lang);
+    document.querySelectorAll('.langbar button').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.set === lang);
+    });
+    try { localStorage.setItem('cryptobot_lang', lang); } catch (e) {}
+  }
+  // restore last choice
+  try {
+    var saved = localStorage.getItem('cryptobot_lang');
+    if (saved) setLang(saved);
+  } catch (e) {}
+</script>
+</body>
+</html>

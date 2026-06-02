@@ -1,0 +1,25 @@
+# Secrets — NEVER commit these
+.env
+*.key
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.python-version
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Bot runtime files (machine-local; not for the repo)
+bot_state.json
+trade_journal.jsonl
+backtest_report.html
+*.log
+# NOTE: docs/state.json IS committed on purpose — it's how GitHub Pages serves
+# live data, and it contains no secrets.

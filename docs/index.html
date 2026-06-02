@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Bot — Live Dashboard</title>
+<style>
+  body{margin:0;background:#0e1117;color:#e6edf3;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:24px}
+  .top{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+  h1{font-size:1.4rem;margin:0}
+  .pill{font-family:ui-monospace,monospace;font-size:.75rem;padding:4px 10px;border-radius:999px;border:1px solid #2a3343;background:#1c2230;color:#9aa7b8}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:16px 0}
+  .card{background:#161b22;border:1px solid #2a3343;border-radius:12px;padding:16px 18px}
+  .lbl{color:#9aa7b8;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em}
+  .val{font-size:1.5rem;font-weight:700;font-family:ui-monospace,monospace;margin-top:2px}
+  .pos{color:#3fb950}.neg{color:#f85149}.accent{color:#f0b90b}.mut{color:#9aa7b8}
+  table{width:100%;border-collapse:collapse;font-size:.85rem;font-family:ui-monospace,monospace}
+  th,td{text-align:left;padding:6px 9px;border-bottom:1px solid #2a3343;white-space:nowrap}
+  th{color:#9aa7b8;font-size:.7rem;text-transform:uppercase}
+  td.reason{white-space:normal;color:#9aa7b8}
+  .tag{font-size:.7rem;padding:1px 6px;border-radius:5px;border:1px solid #2a3343}
+  .b-BUY{color:#3fb950;border-color:#3fb95066}.b-SELL{color:#f85149;border-color:#f8514966}
+  .b-HOLD{color:#9aa7b8}.blocked{color:#d29922}
+  h3{margin:18px 0 6px;font-size:1rem}
+  .foot{color:#9aa7b8;font-size:.78rem;margin-top:18px}
+</style></head><body><div class="wrap">
+  <div class="top">
+    <h1>🤖 Trading Bot <span class="accent" id="sym"></span></h1>
+    <div>
+      <span class="pill" id="mode">—</span>
+      <span class="pill" id="upd">connecting…</span>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card"><div class="lbl">Live price <span id="livedot" class="mut" style="font-size:.7rem">○</span></div><div class="val" id="price">—</div></div>
+    <div class="card"><div class="lbl">Position</div><div class="val" id="pos">—</div></div>
+    <div class="card"><div class="lbl">Unrealized P&amp;L</div><div class="val" id="unreal">—</div></div>
+    <div class="card"><div class="lbl">Realized P&amp;L</div><div class="val" id="realized">—</div></div>
+    <div class="card"><div class="lbl">Win / Loss</div><div class="val" id="wl">—</div></div>
+    <div class="card"><div class="lbl">Trades today</div><div class="val" id="today">—</div></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0">Price (recent decisions)</h3>
+    <svg id="spark" viewBox="0 0 860 160" width="100%" preserveAspectRatio="none"></svg>
+  </div>
+
+  <h3>Recent decisions</h3>
+  <div class="card" style="padding:6px 10px">
+    <table><thead><tr><th>Time</th><th>Action</th><th>Conf</th><th>Price</th><th>Status</th><th>Reason</th></tr></thead>
+    <tbody id="rows"><tr><td colspan="6" class="mut">Waiting for the bot to publish state.json…</td></tr></tbody></table>
+  </div>
+
+  <p class="foot">Live price streams from Binance's public WebSocket. Bot P&amp;L is read from
+     <code id="srcurl">state.json</code> (published by the bot). Auto-refreshes every 5s.</p>
+</div>
+<script>
+// State source: defaults to sibling state.json (works on GitHub Pages /docs).
+// Override for a remote bot:  ?state=https://raw.githubusercontent.com/USER/REPO/gh-pages/state.json
+const STATE_URL = new URLSearchParams(location.search).get('state') || 'state.json';
+document.getElementById('srcurl').textContent = STATE_URL;
+
+const money = (v)=> (v>=0?'+$':'-$')+Math.abs(v).toFixed(2);
+const cls = (v)=> v>=0?'val pos':'val neg';
+
+let ws=null, wsConnected=false;
+function connectWS(symbol, mode){
+  if(ws || !symbol) return;
+  const host = mode==='TESTNET' ? 'wss://stream.testnet.binance.vision'
+                                : 'wss://stream.binance.com:9443';
+  ws = new WebSocket(host+'/ws/'+symbol.toLowerCase()+'@trade');
+  ws.onopen = ()=>{ wsConnected=true; document.getElementById('livedot').innerHTML='<span class="pos">● live</span>'; };
+  ws.onclose = ()=>{ wsConnected=false; ws=null; document.getElementById('livedot').innerHTML='○';
+    setTimeout(()=>connectWS(symbol,mode),3000); };
+  ws.onerror = ()=>{ try{ws.close();}catch(e){} };
+  ws.onmessage = (m)=>{ const t=JSON.parse(m.data);
+    if(t.p) document.getElementById('price').textContent='$'+Number(t.p).toLocaleString(); };
+}
+
+function spark(series){
+  const svg=document.getElementById('spark');
+  if(!series || series.length<2){svg.innerHTML='<text x="10" y="80" fill="#9aa7b8" font-size="12">no data yet</text>';return;}
+  const ps=series.map(s=>s.price), lo=Math.min(...ps), hi=Math.max(...ps), span=(hi-lo)||1, n=ps.length;
+  const pts=ps.map((p,i)=>{const x=10+840*i/(n-1);const y=150-140*(p-lo)/span;return x.toFixed(1)+','+y.toFixed(1);}).join(' ');
+  svg.innerHTML='<polyline fill="none" stroke="#f0b90b" stroke-width="2" points="'+pts+'"/>'+
+    '<text x="10" y="14" fill="#9aa7b8" font-size="11">'+hi.toLocaleString()+'</text>'+
+    '<text x="10" y="150" fill="#9aa7b8" font-size="11">'+lo.toLocaleString()+'</text>';
+}
+
+async function tick(){
+  try{
+    const d=await (await fetch(STATE_URL+'?t='+Date.now())).json();
+    document.getElementById('sym').textContent=d.symbol||'';
+    document.getElementById('mode').textContent=d.mode||'—';
+    document.getElementById('upd').textContent='updated '+new Date().toLocaleTimeString();
+    connectWS(d.symbol, d.mode);
+    if(!wsConnected) document.getElementById('price').textContent='$'+Number(d.last_price||0).toLocaleString();
+    document.getElementById('pos').innerHTML = d.holding
+      ? '<span class="pos">IN</span> <span class="mut" style="font-size:.8rem">@ '+Number(d.entry).toLocaleString()+'</span>'
+      : '<span class="mut">FLAT</span>';
+    const u=document.getElementById('unreal'); u.className=cls(d.unreal_usd);
+    u.textContent = d.holding ? money(d.unreal_usd)+'  ('+d.unreal_pct+'%)' : '—';
+    const r=document.getElementById('realized'); r.className=cls(d.realized_usd); r.textContent=money(d.realized_usd);
+    document.getElementById('wl').innerHTML='<span class="pos">'+d.wins+'</span> / <span class="neg">'+d.losses+'</span>';
+    document.getElementById('today').textContent=d.trades_today;
+    spark(d.series);
+    const rows=(d.recent||[]).map(e=>{
+      const a=e.action||'—'; const status=e.blocked?'<span class="blocked">blocked: '+e.blocked+'</span>':'<span class="pos">ok</span>';
+      const conf=e.confidence==null?'—':e.confidence;
+      const price=e.price?Number(e.price).toLocaleString():'—';
+      return '<tr><td>'+e.ts+'</td><td><span class="tag b-'+a+'">'+a+'</span></td><td>'+conf+'</td><td>'+price+'</td><td>'+status+'</td><td class="reason">'+(e.reason||'')+'</td></tr>';
+    }).join('');
+    document.getElementById('rows').innerHTML = rows || '<tr><td colspan="6" class="mut">No decisions yet.</td></tr>';
+  }catch(err){
+    document.getElementById('upd').textContent='no state.json yet';
+  }
+}
+tick(); setInterval(tick,5000);
+</script>
+</body></html>

@@ -1,0 +1,27 @@
+# systemd unit template — run the bot 24/7 on a Linux VPS.
+#
+# Install:
+#   1. Edit User= and the two REPLACE_ME paths below.
+#   2. sudo cp scripts/cryptobot.service /etc/systemd/system/
+#   3. sudo systemctl daemon-reload
+#   4. sudo systemctl enable --now cryptobot
+#   Logs:  journalctl -u cryptobot -f
+#
+# For the dashboard publisher, copy this to cryptobot-publish.service and change
+# ExecStart to scripts/publish.sh.
+
+[Unit]
+Description=Crypto trading bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=REPLACE_ME_USER
+WorkingDirectory=REPLACE_ME/crypto_trading
+ExecStart=/bin/bash REPLACE_ME/crypto_trading/scripts/run-bot.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
